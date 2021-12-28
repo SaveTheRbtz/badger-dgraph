@@ -1,0 +1,44 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "table",
+    srcs = [
+        "builder.go",
+        "iterator.go",
+        "merge_iterator.go",
+        "table.go",
+    ],
+    importpath = "github.com/dgraph-io/badger/v3/table",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//fb",
+        "//options",
+        "//pb",
+        "//y",
+        "@com_github_dgraph_io_ristretto//:ristretto",
+        "@com_github_dgraph_io_ristretto//z",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_snappy//:snappy",
+        "@com_github_google_flatbuffers//go",
+        "@com_github_pkg_errors//:errors",
+    ],
+)
+
+go_test(
+    name = "table_test",
+    srcs = [
+        "builder_test.go",
+        "merge_iterator_test.go",
+        "table_test.go",
+    ],
+    embed = [":table"],
+    deps = [
+        "//fb",
+        "//options",
+        "//pb",
+        "//y",
+        "@com_github_cespare_xxhash//:xxhash",
+        "@com_github_dgraph_io_ristretto//:ristretto",
+        "@com_github_stretchr_testify//require",
+    ],
+)

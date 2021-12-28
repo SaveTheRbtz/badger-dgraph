@@ -2,4 +2,9 @@ p/
 badger-test*/
 .idea/
 
+bazel-badger
+bazel-bin
+bazel-out
+bazel-testlogs
+
 vendor

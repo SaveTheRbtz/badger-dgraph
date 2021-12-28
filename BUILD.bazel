@@ -1,0 +1,146 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+gazelle(
+    name = "gazelle",
+    args = [
+        "-go_proto_compiler=@io_bazel_rules_go//proto:gogofaster_proto",
+    ],
+    prefix = "github.com/dgraph-io/badger/v3",
+)
+
+gazelle(
+    name = "gazelle-update-repos",
+    args = [
+        "-from_file=go.mod",
+        "-to_macro=deps.bzl%go_dependencies",
+        "-prune",
+    ],
+    command = "update-repos",
+)
+
+go_library(
+    name = "badger",
+    srcs = [
+        "backup.go",
+        "batch.go",
+        "compaction.go",
+        "db.go",
+        "dir_plan9.go",
+        "dir_unix.go",
+        "dir_windows.go",
+        "discard.go",
+        "doc.go",
+        "errors.go",
+        "histogram.go",
+        "iterator.go",
+        "key_registry.go",
+        "level_handler.go",
+        "levels.go",
+        "logger.go",
+        "managed_db.go",
+        "manifest.go",
+        "memtable.go",
+        "merge.go",
+        "options.go",
+        "publisher.go",
+        "stream.go",
+        "stream_writer.go",
+        "structs.go",
+        "txn.go",
+        "util.go",
+        "value.go",
+    ],
+    importpath = "github.com/dgraph-io/badger/v3",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//options",
+        "//pb",
+        "//skl",
+        "//table",
+        "//trie",
+        "//y",
+        "@com_github_dgraph_io_ristretto//:ristretto",
+        "@com_github_dgraph_io_ristretto//z",
+        "@com_github_dustin_go_humanize//:go-humanize",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_pkg_errors//:errors",
+        "@io_opencensus_go//trace",
+    ] + select({
+        "@io_bazel_rules_go//go/platform:aix": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:android": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:darwin": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:dragonfly": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:freebsd": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:illumos": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:ios": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:js": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:linux": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:netbsd": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:openbsd": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:solaris": [
+            "@org_golang_x_sys//unix",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+go_test(
+    name = "badger_test",
+    srcs = [
+        "backup_test.go",
+        "batch_test.go",
+        "db2_test.go",
+        "db_test.go",
+        "discard_test.go",
+        "histogram_test.go",
+        "iterator_test.go",
+        "key_registry_test.go",
+        "levels_test.go",
+        "logger_test.go",
+        "managed_db_test.go",
+        "manifest_test.go",
+        "merge_test.go",
+        "options_test.go",
+        "publisher_test.go",
+        "stream_test.go",
+        "stream_writer_test.go",
+        "txn_test.go",
+        "value_test.go",
+    ],
+    embed = [":badger"],
+    deps = [
+        "//options",
+        "//pb",
+        "//table",
+        "//y",
+        "@com_github_dgraph_io_ristretto//z",
+        "@com_github_dustin_go_humanize//:go-humanize",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_stretchr_testify//require",
+        "@io_opencensus_go//trace",
+    ],
+)

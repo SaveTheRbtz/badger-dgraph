@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "skl",
+    srcs = [
+        "arena.go",
+        "skl.go",
+    ],
+    importpath = "github.com/dgraph-io/badger/v3/skl",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//y",
+        "@com_github_dgraph_io_ristretto//z",
+    ],
+)
+
+go_test(
+    name = "skl_test",
+    srcs = ["skl_test.go"],
+    embed = [":skl"],
+    deps = [
+        "//y",
+        "@com_github_stretchr_testify//require",
+    ],
+)

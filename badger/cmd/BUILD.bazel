@@ -1,0 +1,43 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "cmd",
+    srcs = [
+        "backup.go",
+        "bank.go",
+        "bench.go",
+        "flatten.go",
+        "info.go",
+        "pick_table_bench.go",
+        "read_bench.go",
+        "restore.go",
+        "root.go",
+        "rotate.go",
+        "stream.go",
+        "write_bench.go",
+    ],
+    importpath = "github.com/dgraph-io/badger/v3/badger/cmd",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//:badger",
+        "//options",
+        "//pb",
+        "//table",
+        "//y",
+        "@com_github_dgraph_io_ristretto//z",
+        "@com_github_dustin_go_humanize//:go-humanize",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_spf13_cobra//:cobra",
+    ],
+)
+
+go_test(
+    name = "cmd_test",
+    srcs = ["rotate_test.go"],
+    embed = [":cmd"],
+    deps = [
+        "//:badger",
+        "//y",
+        "@com_github_stretchr_testify//require",
+    ],
+)
