@@ -1264,8 +1264,9 @@ func TestStreamWithFullCopy(t *testing.T) {
 			outOpts.Dir = dir
 			outOpts.ValueDir = dir
 		}
-
-		require.NoError(t, db.StreamDB(outOpts))
+		outDB, err := OpenManaged(outOpts)
+		require.NoError(t, err)
+		require.NoError(t, db.StreamDB(outDB.NewStreamWriter()))
 		out, err := Open(outOpts)
 		require.NoError(t, err)
 		defer func() {

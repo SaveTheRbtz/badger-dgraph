@@ -119,7 +119,11 @@ func stream(cmd *cobra.Command, args []string) error {
 			WithCompression(options.CompressionType(so.compressionType)).
 			WithEncryptionKey(encKey).
 			WithReadOnly(false)
-		err = inDB.StreamDB(outOpt)
+		outDB, err := badger.OpenManaged(outOpt)
+		if err != nil {
+			return y.Wrapf(err, "cannot open out DB at %s", so.outDir)
+		}
+		err = inDB.StreamDB(outDB.NewStreamWriter())
 
 	} else if len(so.outFile) > 0 {
 		stream.LogPrefix = "DB.Backup"

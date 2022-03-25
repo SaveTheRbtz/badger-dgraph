@@ -113,7 +113,7 @@ func TestStreamWriter2(t *testing.T) {
 			require.NoError(t, sw.Prepare(), "sw.Prepare() failed")
 			require.NoError(t, sw.Write(list), "sw.Write() failed")
 			// get max version of sw, will be used in transactions for managed mode
-			maxVs := sw.maxVersion
+			maxVs := sw.(*StreamWriterImpl).maxVersion
 			require.NoError(t, sw.Flush(), "sw.Flush() failed")
 
 			// delete all the inserted keys
@@ -192,7 +192,7 @@ func TestStreamWriter3(t *testing.T) {
 			require.NoError(t, sw.Prepare(), "sw.Prepare() failed")
 			require.NoError(t, sw.Write(buf), "sw.Write() failed")
 			// get max version of sw, will be used in transactions for managed mode
-			maxVs := sw.maxVersion
+			maxVs := sw.(*StreamWriterImpl).maxVersion
 			require.NoError(t, sw.Flush(), "sw.Flush() failed")
 
 			// insert keys which are odd

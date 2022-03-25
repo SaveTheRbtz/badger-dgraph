@@ -30,18 +30,26 @@ import (
 	"github.com/pkg/errors"
 )
 
-// StreamWriter is used to write data coming from multiple streams. The streams must not have any
+type StreamWriter interface {
+	Prepare() error
+	PrepareIncremental() error
+	Write(buf *z.Buffer) error
+	Cancel()
+	Flush() error
+}
+
+// StreamWriterImpl is used to write data coming from multiple streams. The streams must not have any
 // overlapping key ranges. Within each stream, the keys must be sorted. Badger Stream framework is
-// capable of generating such an output. So, this StreamWriter can be used at the other end to build
+// capable of generating such an output. So, this StreamWriterImpl can be used at the other end to build
 // BadgerDB at a much faster pace by writing SSTables (and value logs) directly to LSM tree levels
 // without causing any compactions at all. This is way faster than using batched writer or using
 // transactions, but only applicable in situations where the keys are pre-sorted and the DB is being
 // bootstrapped. Existing data would get deleted when using this writer. So, this is only useful
 // when restoring from backup or replicating DB across servers.
 //
-// StreamWriter should not be called on in-use DB instances. It is designed only to bootstrap new
+// StreamWriterImpl should not be called on in-use DB instances. It is designed only to bootstrap new
 // DBs.
-type StreamWriter struct {
+type StreamWriterImpl struct {
 	writeLock       sync.Mutex
 	db              *DB
 	done            func()
@@ -60,8 +68,8 @@ type StreamWriter struct {
 // called. The memory usage of a StreamWriter is directly proportional to the number of streams
 // possible. So, efforts must be made to keep the number of streams low. Stream framework would
 // typically use 16 goroutines and hence create 16 streams.
-func (db *DB) NewStreamWriter() *StreamWriter {
-	return &StreamWriter{
+func (db *DB) NewStreamWriter() StreamWriter {
+	return &StreamWriterImpl{
 		db: db,
 		// throttle shouldn't make much difference. Memory consumption is based on the number of
 		// concurrent streams being processed.
@@ -75,7 +83,7 @@ func (db *DB) NewStreamWriter() *StreamWriter {
 // existing DB, stops compactions and any writes being done by other means. Be very careful when
 // calling Prepare, because it could result in permanent data loss. Not calling Prepare would result
 // in a corrupt Badger instance. Use PrepareIncremental to do incremental stream write.
-func (sw *StreamWriter) Prepare() error {
+func (sw *StreamWriterImpl) Prepare() error {
 	sw.writeLock.Lock()
 	defer sw.writeLock.Unlock()
 
@@ -88,7 +96,7 @@ func (sw *StreamWriter) Prepare() error {
 
 // PrepareIncremental should be called before writing any entry to StreamWriter incrementally.
 // In incremental stream write, the tables are written at one level above the current base level.
-func (sw *StreamWriter) PrepareIncremental() error {
+func (sw *StreamWriterImpl) PrepareIncremental() error {
 	sw.writeLock.Lock()
 	defer sw.writeLock.Unlock()
 
@@ -131,7 +139,7 @@ func (sw *StreamWriter) PrepareIncremental() error {
 // Write writes KVList to DB. Each KV within the list contains the stream id which StreamWriter
 // would use to demux the writes. Write is thread safe and can be called concurrently by multiple
 // goroutines.
-func (sw *StreamWriter) Write(buf *z.Buffer) error {
+func (sw *StreamWriterImpl) Write(buf *z.Buffer) error {
 	if buf.LenNoPadding() == 0 {
 		return nil
 	}
@@ -303,7 +311,7 @@ func (sw *StreamWriter) Write(buf *z.Buffer) error {
 
 // Flush is called once we are done writing all the entries. It syncs DB directories. It also
 // updates Oracle with maxVersion found in all entries (if DB is not managed).
-func (sw *StreamWriter) Flush() error {
+func (sw *StreamWriterImpl) Flush() error {
 	sw.writeLock.Lock()
 	defer sw.writeLock.Unlock()
 
@@ -360,7 +368,7 @@ func (sw *StreamWriter) Flush() error {
 // Cancel signals all goroutines to exit. Calling defer sw.Cancel() immediately after creating a new StreamWriter
 // ensures that writes are unblocked even upon early return. Note that dropAll() is not called here, so any
 // partially written data will not be erased until a new StreamWriter is initialized.
-func (sw *StreamWriter) Cancel() {
+func (sw *StreamWriterImpl) Cancel() {
 	sw.writeLock.Lock()
 	defer sw.writeLock.Unlock()
 
@@ -399,7 +407,7 @@ type sortedWriter struct {
 	closer *z.Closer
 }
 
-func (sw *StreamWriter) newWriter(streamID uint32) (*sortedWriter, error) {
+func (sw *StreamWriterImpl) newWriter(streamID uint32) (*sortedWriter, error) {
 	bopts := buildTableOptions(sw.db)
 	for i := 2; i < sw.db.opt.MaxLevels; i++ {
 		bopts.TableSize *= uint64(sw.db.opt.TableSizeMultiplier)

@@ -2225,30 +2225,21 @@ func createDirs(opt Options) error {
 
 // Stream the contents of this DB to a new DB with options outOptions that will be
 // created in outDir.
-func (db *DB) StreamDB(outOptions Options) error {
-	outDir := outOptions.Dir
-
-	// Open output DB.
-	outDB, err := OpenManaged(outOptions)
-	if err != nil {
-		return y.Wrapf(err, "cannot open out DB at %s", outDir)
-	}
-	defer outDB.Close()
-	writer := outDB.NewStreamWriter()
+func (db *DB) StreamDB(writer StreamWriter) error {
 	if err := writer.Prepare(); err != nil {
-		return y.Wrapf(err, "cannot create stream writer in out DB at %s", outDir)
+		return y.Wrapf(err, "cannot create stream writer in out DB")
 	}
 
 	// Stream contents of DB to the output DB.
 	stream := db.NewStreamAt(math.MaxUint64)
-	stream.LogPrefix = fmt.Sprintf("Streaming DB to new DB at %s", outDir)
+	stream.LogPrefix = fmt.Sprintf("Streaming DB to new DB")
 	stream.FullCopy = true
 
 	stream.Send = func(buf *z.Buffer) error {
 		return writer.Write(buf)
 	}
 	if err := stream.Orchestrate(context.Background()); err != nil {
-		return y.Wrapf(err, "cannot stream DB to out DB at %s", outDir)
+		return y.Wrapf(err, "cannot stream DB to out DB")
 	}
 	if err := writer.Flush(); err != nil {
 		return y.Wrapf(err, "cannot flush writer")

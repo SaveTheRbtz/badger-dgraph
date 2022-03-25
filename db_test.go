@@ -410,13 +410,14 @@ func TestStreamDB(t *testing.T) {
 	outDir, err := ioutil.TempDir("", "badger-test")
 	require.NoError(t, err)
 	outOpt := getTestOptions(outDir)
-	require.NoError(t, db.StreamDB(outOpt))
-
 	outDB, err := OpenManaged(outOpt)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, outDB.Close())
 	}()
+	require.NoError(t, db.StreamDB(outDB.NewStreamWriter()))
+
+
 	check(outDB)
 }
 
